@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
 {
 	FILE *fin;	/* Link Stream */
 
-	if(argc != 2){
+	if(argc != 2)
+	{
 		printf("Usage: %s <input binary file>\n", argv[0]);
 		exit(1);
 	}
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
 
 void run_test(FILE *fin)
 {
-	int				i = 0;
+	int		i = 0;
 	unsigned char	inp8 = 0;
 	
 	/* initialize hdlc context and set callback function */

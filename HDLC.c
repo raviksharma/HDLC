@@ -17,7 +17,7 @@
 #define MAX_HDLC_FR_BITS		(MAX_HDLC_FR_LEN_WITH_STUF*8)
 #define MIN_HDLC_FR_BITS		(MIN_HDLC_FR_LEN*8)
 
-#define FLAG					(0x7E)		/* HDLC frame start/end flag */
+#define FLAG				(0x7E)		/* HDLC frame start/end flag */
 #define HDLC_TERM_FLAG			(0x7F)		/* HDLC terminate flag */
 
 /****************************************************************************/
@@ -36,14 +36,14 @@
 /*                       PROTOTYPES AND LOCAL FUNCTIONS                     */
 /****************************************************************************/
 
-static void clear_hdlc_ctxt(hdlc_ch_ctxt_t *hdlc_ch_ctxt);
-static void detect_hdlc_frame(hdlc_ch_ctxt_t *hdlc_ch_ctxt, unsigned char rec_byte, int offset);
-static void remove_stuffing(unsigned char dest_fr[], unsigned char src_frame[], unsigned short bit_cnt, unsigned short *byte_cnt, hdlc_fr_detect_errors_e *err, int offset);
+void 	clear_hdlc_ctxt(hdlc_ch_ctxt_t *hdlc_ch_ctxt);
+void 	detect_hdlc_frame(hdlc_ch_ctxt_t *hdlc_ch_ctxt, unsigned char rec_byte, int offset);
+void 	remove_stuffing(unsigned char dest_fr[], unsigned char src_frame[], unsigned short bit_cnt, unsigned short *byte_cnt, hdlc_fr_detect_errors_e *err, int offset);
 
-static int	hdlc_CRC_match(unsigned char hdlc_frame[MAX_HDLC_FR_LEN],int frame_size);
-static void compute_crc16(unsigned char data[MAX_HDLC_FR_LEN], int size, unsigned char crc[2]);
+int	hdlc_CRC_match(unsigned char hdlc_frame[MAX_HDLC_FR_LEN],int frame_size);
+void 	compute_crc16(unsigned char data[MAX_HDLC_FR_LEN], int size, unsigned char crc[2]);
 
-static void handle_hdlc_frame(hdlc_ch_ctxt_t *ctxt, int offset);
+void 	handle_hdlc_frame(hdlc_ch_ctxt_t *ctxt, int offset);
 
 /****************************************************************************/
 /*                             EXPORTED VARIABLES                           */
@@ -53,13 +53,13 @@ static void handle_hdlc_frame(hdlc_ch_ctxt_t *ctxt, int offset);
 /*                              GLOBAL VARIABLES                            */
 /****************************************************************************/
 
-unsigned char bitmask[] = {0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE};
+const unsigned char bitmask[] = {0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE};
 
 /* FLAG cyclic rotation */
-unsigned char flag_lookup[] = {0xFC, 0xF9, 0xF3, 0xE7, 0xCF, 0x9F, 0x3F, 0x7E};
+const unsigned char flag_lookup[] = {0xFC, 0xF9, 0xF3, 0xE7, 0xCF, 0x9F, 0x3F, 0x7E};
 
 /* CRC lookup table */
-unsigned short CrcTable[256]=
+const unsigned short CrcTable[256]=
 {
 	0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7, 0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,
 	0x1231, 0x0210, 0x3273, 0x2252, 0x52B5, 0x4294, 0x72F7, 0x62D6, 0x9339, 0x8318, 0xB37B, 0xA35A, 0xD3BD, 0xC39C, 0xF3FF, 0xE3DE,
@@ -112,7 +112,7 @@ void HDLC(unsigned char inp8, int offset, hdlc_ch_ctxt_t *hdlc_ch_ctxt)
 /* 
 * Removes stuffing, handles frame length errors, Checks CRC 
 */
-static void handle_hdlc_frame(hdlc_ch_ctxt_t *ctxt, int offset)
+void handle_hdlc_frame(hdlc_ch_ctxt_t *ctxt, int offset)
 {
 	unsigned char	fr_minus_stuffing[MAX_HDLC_FR_LEN_WITH_STUF]={0};
 	unsigned short	valid_bytes = 0;
@@ -146,7 +146,7 @@ static void handle_hdlc_frame(hdlc_ch_ctxt_t *ctxt, int offset)
 /*
 * clears sinagling context.
 */
-static void clear_hdlc_ctxt(hdlc_ch_ctxt_t *hdlc_ch_ctxt)
+void clear_hdlc_ctxt(hdlc_ch_ctxt_t *hdlc_ch_ctxt)
 {
 	hdlc_ch_ctxt->flag_pos_ctr = 0;
 	hdlc_ch_ctxt->rec_bits=0;
@@ -163,7 +163,7 @@ static void clear_hdlc_ctxt(hdlc_ch_ctxt_t *hdlc_ch_ctxt)
 /*
 * detects hdlc frame.
 */
-static void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int offset)
+void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int offset)
 {
 	unsigned char	i;
 	unsigned short	byte_index;
@@ -180,7 +180,7 @@ static void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int 
 			/* look for 7E */
 			if(FLAG == ctxt->rec_bits)
 			{
-				ctxt->state			= FLAG_SYNC_EST;	/* move to flag sync established state */
+				ctxt->state		= FLAG_SYNC_EST;	/* move to flag sync established state */
 				ctxt->flag_pos_ctr	= 0;
 			}
 			break;
@@ -200,7 +200,7 @@ static void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int 
 				/* move to frame rx state and copy last (ctxt->flag_pos_ctr+1) bits update frame bit counter */
 				ctxt->frame[0]		= (ctxt->rec_bits&(~bitmask[(8-(ctxt->flag_pos_ctr+1))]))<<(8-(ctxt->flag_pos_ctr+1));
 				ctxt->fr_bit_cnt	= (ctxt->flag_pos_ctr+1);
-				ctxt->state			= FRAME_RX;
+				ctxt->state		= FRAME_RX;
 			}
 			break;
 
@@ -214,7 +214,7 @@ static void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int 
 			{
 				memset(&ctxt->frame, 0, MAX_HDLC_FR_LEN_WITH_STUF);
 				ctxt->fr_bit_cnt	= 0;
-				ctxt->state			= FLAG_SEARCH;
+				ctxt->state		= FLAG_SEARCH;
 				printf("\n%d\tHDLC FRAME: ERROR frame length exceeded during RX", offset);
 				break;
 			}
@@ -222,38 +222,38 @@ static void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int 
 			if(FLAG == ctxt->rec_bits)
 			{
 				/* closing flag found */
-				ctxt->state			= FLAG_SYNC_EST;
+				ctxt->state		= FLAG_SYNC_EST;
 				ctxt->flag_pos_ctr	= 0;
 
 				if(MIN_HDLC_FR_BITS > ctxt->fr_bit_cnt) /* error: invalid frame length */
 				{
 					memset(&ctxt->frame, 0, MAX_HDLC_FR_LEN_WITH_STUF);
 					ctxt->fr_bit_cnt	= 0;
-					ctxt->state			= FLAG_SEARCH;
+					ctxt->state		= FLAG_SEARCH;
 					printf("\n%d\tHDLC FRAME: ERROR frame length less than %d bits", offset, MIN_HDLC_FR_BITS*8);
 					break;
 				}
 
 				/* remove last 8 bits from frame and update frame bit counter */
 				ctxt->frame[byte_index]	= 0;
-				ctxt->fr_bit_cnt		= (ctxt->fr_bit_cnt-8);
-				byte_index				= (ctxt->fr_bit_cnt/8);
+				ctxt->fr_bit_cnt	= (ctxt->fr_bit_cnt-8);
+				byte_index		= (ctxt->fr_bit_cnt/8);
 				ctxt->frame[byte_index]	= ((ctxt->frame[byte_index])&(bitmask[ctxt->fr_bit_cnt%8]));
 
 				/* copy frame to caller's copy */
 				memcpy(&ctxt->ready_fr,&ctxt->frame,MAX_HDLC_FR_LEN_WITH_STUF);
-				ctxt->ready_fr_bit_cnt=ctxt->fr_bit_cnt;
-				ctxt->frame_ready = TRUE;
+				ctxt->ready_fr_bit_cnt	= ctxt->fr_bit_cnt;
+				ctxt->frame_ready 	= TRUE;
 
 				/* reset working copy */
 				memset(&ctxt->frame, 0, MAX_HDLC_FR_LEN_WITH_STUF);
-				ctxt->fr_bit_cnt=0;
+				ctxt->fr_bit_cnt	= 0;
 			}
 			else if(HDLC_TERM_FLAG == ctxt->rec_bits)
 			{
 				memset(&ctxt->frame, 0, MAX_HDLC_FR_LEN_WITH_STUF);
 				ctxt->fr_bit_cnt	= 0;
-				ctxt->state			= FLAG_SEARCH;
+				ctxt->state		= FLAG_SEARCH;
 				break;
 			}
 
@@ -269,7 +269,7 @@ static void detect_hdlc_frame(hdlc_ch_ctxt_t *ctxt, unsigned char rec_byte, int 
 /*
 * removes stuffed bits. assumption: any bit after 5 1s is ignored
 */
-static void remove_stuffing(unsigned char dst_fr[], unsigned char src_fr[], unsigned short bit_cnt, unsigned short *byte_cnt, hdlc_fr_detect_errors_e *err, int offset)
+void remove_stuffing(unsigned char dst_fr[], unsigned char src_fr[], unsigned short bit_cnt, unsigned short *byte_cnt, hdlc_fr_detect_errors_e *err, int offset)
 {
 	unsigned short	i;
 	unsigned short	src_byte;
@@ -320,7 +320,7 @@ static void remove_stuffing(unsigned char dst_fr[], unsigned char src_fr[], unsi
 /*
 * runs CRC check
 */
-static int hdlc_CRC_match(unsigned char hdlc_frame[MAX_HDLC_FR_LEN], int frame_size)
+int hdlc_CRC_match(unsigned char hdlc_frame[MAX_HDLC_FR_LEN], int frame_size)
 {
 	unsigned char hdlc_crc[2] = {0};
 
@@ -338,10 +338,10 @@ static int hdlc_CRC_match(unsigned char hdlc_frame[MAX_HDLC_FR_LEN], int frame_s
 /*
 * Computes CRC
 */
-static void compute_crc16(unsigned char data[MAX_HDLC_FR_LEN], int size, unsigned char crc[2])
+void compute_crc16(unsigned char data[MAX_HDLC_FR_LEN], int size, unsigned char crc[2])
 {
-	int				j = 0;
-	int				byte_cnt = 0;
+	int		j = 0;
+	int		byte_cnt = 0;
 	unsigned char	crc_data[MAX_HDLC_FR_LEN] = {0};
 	unsigned char	crc_bits[2] = {0};
 	unsigned short	fcs = 0xFFFF;
